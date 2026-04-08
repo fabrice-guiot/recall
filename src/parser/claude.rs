@@ -40,10 +40,18 @@ pub struct ClaudeParser;
 
 impl SessionParser for ClaudeParser {
     fn can_parse(path: &Path) -> bool {
-        // Claude Code sessions are in ~/.claude/projects/
-        path.to_str()
-            .map(|s| s.contains(".claude/projects"))
-            .unwrap_or(false)
+        // Claude Code sessions live under a "projects/<slug>/<id>.jsonl" layout,
+        // either in ~/.claude/projects/ or in $CLAUDE_CONFIG_DIR/projects/
+        // (e.g. claudewho's ~/.claudewho-<account>/projects/).
+        let Some(s) = path.to_str() else { return false };
+        if !s.ends_with(".jsonl") {
+            return false;
+        }
+        // Match any path containing "/projects/" — covers both default and
+        // CLAUDE_CONFIG_DIR-relocated layouts. Other supported tools (codex,
+        // factory, opencode) do not use a "projects" directory, so this is
+        // unambiguous within recall's discovery set.
+        s.contains("/projects/")
     }
 
     fn parse_file(path: &Path) -> Result<Session> {

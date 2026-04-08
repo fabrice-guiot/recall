@@ -49,8 +49,11 @@ pub fn discover_session_files() -> Vec<std::path::PathBuf> {
         .or_else(dirs::home_dir);
 
     if let Some(home) = home {
-        // Claude Code: ~/.claude/projects/*/*.jsonl
-        let claude_dir = home.join(".claude/projects");
+        // Claude Code: $CLAUDE_CONFIG_DIR/projects/*/*.jsonl if set,
+        // otherwise ~/.claude/projects/*/*.jsonl
+        let claude_dir = std::env::var("CLAUDE_CONFIG_DIR")
+            .map(|d| std::path::PathBuf::from(d).join("projects"))
+            .unwrap_or_else(|_| home.join(".claude/projects"));
         if claude_dir.exists() {
             if let Ok(projects) = std::fs::read_dir(&claude_dir) {
                 for project in projects.flatten() {
